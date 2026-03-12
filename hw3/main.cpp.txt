@@ -1,0 +1,92 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <map>
+#include <algorithm>
+
+using namespace std;
+
+int count_overloading_days(const vector<string>& sign_in_out_times) {
+    int count = 0;
+    map<string, int> time_map;
+    for (const auto& time : sign_in_out_times) {
+        time_map[time]++;
+    }
+    for (auto it = time_map.begin(); it != time_map.end(); it++) {
+        if (it->second > 1) {
+            int hour_diff = (it->second - 1) * 8;
+            if (hour_diff < 24) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
+int count_sign_forget_days(const vector<string>& sign_in_out_types) {
+    int count = 0;
+    map<string, int> type_map;
+    for (const auto& type : sign_in_out_types) {
+        type_map[type]++;
+    }
+    for (auto it = type_map.begin(); it != type_map.end(); it++) {
+        if (it->second == 1) {
+            count++;
+        }
+    }
+    return count;
+}
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        cout << "Please enter the file name as argument." << endl;
+        return 0;
+    }
+    ifstream file(argv[1]);
+    if (!file.is_open()) {
+        cout << "Failed to open file." << endl;
+        return 0;
+    }
+    map<string, vector<string>> data_map;
+    string line;
+    while (getline(file, line)) {
+        size_t pos = line.find(',');
+        if (pos == string::npos) {
+            cout << "Invalid format: " << line << endl;
+            continue;
+        }
+        string id = line.substr(0, pos);
+        line = line.substr(pos + 1);
+        pos = line.find(',');
+        if (pos == string::npos) {
+            cout << "Invalid format: " << line << endl;
+            continue;
+        }
+        string type = line.substr(0, pos);
+        string time = line.substr(pos + 1);
+        data_map[id].push_back(type + "," + time);
+    }
+    file.close();
+    vector<string> employee_ids;
+    for (auto it = data_map.begin(); it != data_map.end(); it++) {
+        employee_ids.push_back(it->first);
+    }
+    sort(employee_ids.begin(), employee_ids.end());
+    for (const auto& id : employee_ids) {
+        const auto& sign_in_out_data = data_map[id];
+        vector<string> sign_in_out_times;
+        vector<string> sign_in_out_types;
+        for (const auto& data : sign_in_out_data) {
+            size_t pos = data.find(',');
+            string type = data.substr(0, pos);
+            string time_str = data.substr(pos + 1);
+            sign_in_out_types.push_back(type);
+            sign_in_out_times.push_back(time_str);
+        }
+        int overloading_days = count_overloading_days(sign_in_out_times);
+        int sign_forget_days = count_sign_forget_days(sign_in_out_types);
+        cout << id << "," << overloading_days << "," << sign_forget_days << endl;
+    }
+    return 0;
+}
